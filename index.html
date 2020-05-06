@@ -1,1 +1,83 @@
-<h1>Hello World</h1>
+
+<head>
+
+    <style>
+
+     body {
+         font-family: Georgia;
+         font-size: 16px;
+         margin: 0 auto;   /* center content */
+         max-width: 800px; /* limit width */
+         line-height: 1.5;
+         padding-top: 32px;
+         padding-bottom: 32px;
+
+         /* background: linear-gradient(white, hsl(200, 100%, 98%)); */
+         background: linear-gradient(white, #eee);
+     }
+
+     h1 {
+         display: flex;
+         justify-content: center;
+         align-items: center;
+         /* flex-direction: column; */
+
+     }
+
+     h1 img {
+         margin-right: 0.1em;
+         border-radius: 50%;
+
+         }
+
+     a { color: hsla(200, 50%, 50%, 1); }
+
+     a:hover{ color: hsl(200, 80%, 50%); }
+
+     p {
+         display: flex;
+
+         justify-content: center;
+         align-items: center;
+         flex-direction: row;
+
+
+     }
+
+
+     a.link-with-logo {
+
+         display: flex;
+         justify-content: center;
+         align-items: center;
+
+         margin-left: 0.5em;
+
+     }
+
+
+     a.link-with-logo img {
+
+         width: 16px;
+         height: 16px;
+         margin-right: 0.1em;
+
+     }
+
+
+    </style>
+</head>
+
+<body>
+
+    <h1>
+        <img src="https://s.gravatar.com/avatar/80a79bf47981f708dec6fe669bf8b465?s=40">
+        Vlad Ganshin
+    </h1>
+
+<p class="links">
+    <a class="link-with-logo" href="https://instagram.com/ganshinv" target="_blank"> <img src="static/instagram-logo.png">ganshinv</a>
+    <a class="link-with-logo" href="https://github.com/vganshin" target="_blank"> <img src="static/github-logo.png">vganshin</a>
+</p>
+
+</body>
