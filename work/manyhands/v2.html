@@ -1,0 +1,675 @@
+<div id="app">
+  <div id="header">
+    <h1>Manyhands</h1>
+  </div>
+  <div id="picker">
+  </div>
+  <div id="bill">
+  </div>
+</div>
+
+<script>
+
+ const div = 'div';
+ const span = 'span';
+
+ function isElement(obj) {
+   try {
+     //Using W3 DOM2 (works for FF, Opera and Chrome)
+     return obj instanceof HTMLElement;
+   }
+   catch(e){
+     //Browsers not supporting W3 DOM2 don't have HTMLElement and
+     //an exception is thrown and we end up here. Testing some
+     //properties that all elements have (works on IE7)
+     return (typeof obj==="object") &&
+            (obj.nodeType===1) && (typeof obj.style === "object") &&
+            (typeof obj.ownerDocument ==="object");
+   }
+ }
+
+ function c(comp, ...optsAndChildren) {
+   let opts;
+   let children;
+   if (Object.prototype.toString.call(optsAndChildren[0]) === "[object Object]") {
+     opts = optsAndChildren[0];
+     children = optsAndChildren.slice(1);
+   } else {
+     children = optsAndChildren;
+   }
+
+
+   if (typeof(comp) === 'function') {
+     return c.apply(this, comp.apply(this, optsAndChildren));
+   }
+
+   const elem = document.createElement(comp);
+
+   Object.entries(opts || {}).map(([k, v]) => {
+     if (k === 'attrs') {
+       Object.entries(v|| {}).map(([k, v]) => {
+         elem.setAttribute(k, v);
+       })
+     } else {
+       elem[k] = v;
+     }
+   });
+
+   (children || []).map(child => {
+     if (child) {
+       if (Object.prototype.toString.call(child) === "[object Array]") {
+         if (Object.prototype.toString.call(child[0]) === "[object Array]") {
+           child.map(child => {
+             elem.appendChild(c.apply(this, child));
+           })
+         } else {
+           elem.appendChild(c.apply(this, child));
+         }
+       } else {
+         elem.insertAdjacentText('beforeend', child);
+       }
+     }
+   });
+
+
+   return elem;
+ }
+
+ const renderBill = () => {
+   const bill = document.getElementById('bill');
+
+   const finalPrice = config.options.flatMap(g => g.fields).reduce((acc, f) => acc + (f.price * (f.count || 0)), 0);
+
+   const comp = [div, {className: 'bill'},
+                 [div, {className: 'bill__title'}, "Чек"],
+                 config.options.flatMap((group, gidx) =>
+                   group.fields.map((field, fidx) => {
+                     if (field.count) {
+                       const price = `${field.count} × ${field.price} ₽`;
+                       return [div, {className: 'bill__task'},
+                               [div,
+                                [span, {className: "bill__position-remove", onclick: function() {
+                                  config.options[gidx].fields[fidx].count = 0;
+                                  render();
+                                }}, "×"],
+                                field.name],
+                               [span, {className: 'bill__price'}, price]];
+                 }})),
+                 ['hr'],
+                 [div, {className: 'bill__task'},
+                  [div, {className: 'bill__summary_title'}, "Итого"],
+                  [span, {className: 'bill__summary_price'}, `${finalPrice} ₽`]],
+                 [div, {className: 'form'},
+                  [div, {className: 'form__input'},
+                   ['label', {attrs: {'for': 'name'}}, "ФИО: "],
+                   ['input', {id: 'name', type: 'text', value: config.form.name || "", onchange: e => { config.form.name = e.target.value; render();}, 'disabled': config.message}]],
+
+                  [div, {className: 'form__input'},
+                   ['label', {attrs: {'for': 'phone'}}, "Телефон: "],
+                   ['input', {id: 'phone', type: "phone", value: config.form.phone || "", onchange: e => { config.form.phone = e.target.value; render();}, 'disabled': config.message}]],
+
+                  [div, {className: 'form__input'},
+                   ['label', {attrs: {'for': 'city'}}, "Город: "],
+                   ['input', {id: "city", type: "text", value: config.form.city || "", onchange: e => { config.form.city = e.target.value; render();}, 'disabled': config.message}]],
+
+                  [div, {className: 'form__input form__input-last'},
+                   ['label', {attrs: {'for': 'comment'}, value: config.form.comment || "", onchange: e => { config.form.comment = e.target.value; render();}}, "Пожелания: "],
+                   ['textarea', {id: "comment", 'disabled': config.message}]],
+                  config.message ? [span, {className: "form__message"}, config.message, [span, {className: "form__new-order", onclick: function() {init(); render();}}, "Сделать ещё заказ."]] : ['button', {className: 'form__button', onclick: function () { config.message = "Заказ оформлен! Ждите звонка от менеджера."; render();}}, "Оформить заказ"]]];
+
+   const node = c.apply(this, comp);
+   bill.innerHTML = '';
+   bill.appendChild(node);
+ };
+
+ function render() {
+   renderBill();
+   renderPicker();
+ }
+
+ function renderPicker() {
+   const picker = document.getElementById('picker');
+   const comp = [div, {className: 'picker'},
+                 [div, {className: 'picker__header'},
+                  config.category == null ?
+                  [div,
+                   [span, {className: 'pciker__header-services picker__header-unpicked-services', onclick: () => { config.category = null; renderPicker();}}, "Услуги"]] :
+                  [div,
+                   [span, {className: 'pciker__header-services picker__header-picked-services', onclick: () => { config.category = null; renderPicker();}}, "Услуги"],
+                   [span, " → ", config.options[config.category].name]]],
+
+                 config.category != null ?
+                 [div, {},
+                  config.options[config.category].fields.map((field, fidx) =>
+                    [div, {className: 'picker__task'},
+                     [div, field.name],
+                     [div,
+                      [span, {className: 'picker__minus', onclick: (e) => {
+                        if (config.options[config.category].fields[fidx].count) {
+                          config.options[config.category].fields[fidx].count--;
+                        }
+                        render();
+                      }}, "−"],
+
+                      [span, {className: 'picker__count'}, config.options[config.category].fields[fidx].count || "0"],
+                      [span, {className: 'picker__task_unit'}, field.unit],
+                      [span, {className: 'picker__plus', onclick: (e) => {
+                        console.log("wow")
+                        if (config.options[config.category].fields[fidx].count) {
+                          config.options[config.category].fields[fidx].count++;
+                        } else {
+                          config.options[config.category].fields[fidx].count = 1;
+                        }
+                        render();
+                      }}, "+"],
+                 ]])] :
+
+                 [div,
+                  config.options.map((group, gidx) =>
+                    [div, {className: 'picker__group_title', onclick: function () { config.category = gidx; renderPicker(); } }, group.name],
+   )]];
+   const node = c.apply(this, comp);
+   picker.innerHTML = '';
+   picker.appendChild(node);
+ }
+
+ document.addEventListener('DOMContentLoaded', (event) => {
+   renderBill();
+   renderPicker();
+ });
+
+ var originalConfig = {
+   options: [ {
+     "name" : "Мебель поменьше",
+     "fields" : [ {
+       "name" : "Сборка кухонь в сборе",
+       "unit" : "каркас",
+       "price" : 700,
+     }, {
+       "name" : "Сборка кухонь в разборе",
+       "unit" : "каркас",
+       "price" : 1000
+     }, {
+       "name" : "Сборка стеллажа",
+       "unit" : "секция",
+       "price" : 500
+     }, {
+       "name" : "Сборка комод ",
+       "unit" : "шт",
+       "price" : 2500
+     }, {
+       "name" : "Сборка мебельной стены",
+       "unit" : "каркас",
+       "price" : 800
+     }, {
+       "name" : "Сборка Шкаф-гардероб (распашной)",
+       "unit" : "секция",
+       "price" : 900
+     }, {
+       "name" : "Сборка Шкаф-гардероб (купе)",
+       "unit" : "секция",
+       "price" : 1000
+     }, {
+       "name" : "Сборка Шкаф-пенал",
+       "unit" : "шт",
+       "price" : 900
+     }, {
+       "name" : "Сборка тумбочки",
+       "unit" : "шт",
+       "price" : 650
+     }, {
+       "name" : "Сборка офисного кресла",
+       "unit" : "шт",
+       "price" : 700
+     }, {
+       "name" : "Сборка стола",
+       "unit" : "шт",
+       "price" : 2000
+     }, {
+       "name" : "Сборка табурет/стул",
+       "unit" : "шт",
+       "price" : 500
+     }, {
+       "name" : "Сборка мягкой мебели (диваны, кровати)",
+       "unit" : "шт",
+       "price" : 1500
+     }, {
+       "name" : "Сборка мягкой мебели (кресла)",
+       "unit" : "шт",
+       "price" : 900
+     } ]
+   }, {
+     "name" : "Мебель побольше",
+     "fields" : [ {
+       "name" : "Установка и подключение техники ",
+       "unit" : "шт",
+       "price" : 2000
+     }, {
+       "name" : "Установка и подключение смесителя",
+       "unit" : "шт",
+       "price" : 500
+     }, {
+       "name" : "Установка и подключение мойки",
+       "unit" : "шт",
+       "price" : 600
+     }, {
+       "name" : "Установка оконного карниза",
+       "unit" : "шт",
+       "price" : 500
+     }, {
+       "name" : "Установка барной стойки",
+       "unit" : "м.п.",
+       "price" : 800
+     }, {
+       "name" : "Установка столешницы из искуственного камня",
+       "unit" : "м.п.",
+       "price" : 2500
+     }, {
+       "name" : "Склейка столешницы из искуственного камня",
+       "unit" : "шт",
+       "price" : 5000
+     }, {
+       "name" : "Установка бордюра к столешнице из искуственного камня",
+       "unit" : "шт",
+       "price" : 1000
+     }, {
+       "name" : "Установка столешницы (кроме каменных)",
+       "unit" : "шт",
+       "price" : 1000
+     }, {
+       "name" : "Установка и подключение системы очистки воды или измельчителя",
+       "unit" : "шт",
+       "price" : 1000
+     }, {
+       "name" : "Изменение конструкции кухонного шкафа",
+       "unit" : "шт",
+       "price" : 1000
+     }, {
+       "name" : "Установка ручек",
+       "unit" : "шт",
+       "price" : 40
+     }, {
+       "name" : "Установка воздуховода ",
+       "unit" : "м.п.",
+       "price" : 1000
+     }, {
+       "name" : "Демонтаж мебели",
+       "unit" : "каркас",
+       "price" : 400
+     }, {
+       "name" : "Демонтаж бытовой техники",
+       "unit" : "шт",
+       "price" : 400
+     }, {
+       "name" : "Установка стеновых панелей",
+       "unit" : "м.п.",
+       "price" : 450
+     }, {
+       "name" : "Установка стенового бордюра ",
+       "unit" : "м.п.",
+       "price" : 50
+     }, {
+       "name" : "Изготовление отверстия в керамограните",
+       "unit" : "шт",
+       "price" : 900
+     }, {
+       "name" : "Подключение гибкой проводки ",
+       "unit" : "шт",
+       "price" : 500
+     }, {
+       "name" : "Монтаж карниза/рулонной шторы",
+       "unit" : "м.п.",
+       "price" : 400
+     }, {
+       "name" : "Установка и подключение интегриророванного освещения ",
+       "unit" : "шт",
+       "price" : 500
+     }, {
+       "name" : "Установка и подключение светильников",
+       "unit" : "шт",
+       "price" : 350
+     }, {
+       "name" : "Установка рейлингов",
+       "unit" : "шт",
+       "price" : 500
+     }, {
+       "name" : "Изготовление отверстия под петли ",
+       "unit" : "шт",
+       "price" : 200
+     }, {
+       "name" : "Вырез в задней стенке мебели  под конструктивные элементы ",
+       "unit" : "шт",
+       "price" : 450
+     }, {
+       "name" : "Устновка крепления собранной мебели к стене",
+       "unit" : "шт",
+       "price" : 400
+     }, {
+       "name" : "Распил столешницы/фартука/карниза в размер",
+       "unit" : "шт",
+       "price" : 350
+     }, {
+       "name" : "Вырез в столешнице под мойку/технику",
+       "unit" : "шт",
+       "price" : 650
+     }, {
+       "name" : "Вырез под трубу",
+       "unit" : "шт",
+       "price" : 150
+     } ]
+   }, {
+     "name" : "Строительно-монтажные работы",
+     "fields" : [ {
+       "name" : "Монтаж открытой электропроводки",
+       "unit" : "м.п.",
+       "price" : 250
+     }, {
+       "name" : "Монтаж скрытой электропроводки",
+       "unit" : "м.п.",
+       "price" : 1250
+     }, {
+       "name" : "Удлинение выводов воды",
+       "unit" : "м.п.",
+       "price" : 1000
+     }, {
+       "name" : "Перенос канализации",
+       "unit" : "м.п.",
+       "price" : 100
+     }, {
+       "name" : "Демонтаж/монтаж розетки или выключателя",
+       "unit" : "шт",
+       "price" : 300
+     }, {
+       "name" : "Установка внутренней розетки ",
+       "unit" : "шт",
+       "price" : 800
+     }, {
+       "name" : "Установка концевого крана/ вентиля",
+       "unit" : "шт",
+       "price" : 400
+     }, {
+       "name" : "Установка закладных под гипсокартонной стеной (ГКЛ)",
+       "unit" : "м.п.",
+       "price" : 1500
+     }, {
+       "name" : "Диагностика",
+       "unit" : "шт",
+       "price" : 800
+     } ]
+   }, {
+     "name" : "Иные услуги",
+     "fields" : [ {
+       "name" : "Замер помещения/Консультация по сборке мебели и подготовке помещения ",
+       "unit" : "шт",
+       "price" : 1500
+     }, {
+       "name" : "Консультация по сборке мебели и подготовке помещения-онлайн\t30",
+       "unit" : "мин",
+       "price" : 500
+     }, {
+       "name" : "Замер дополнительного помещения",
+       "unit" : "шт",
+       "price" : 700
+     }, {
+       "name" : "Дополнительный  (ложный, выезд эксперта)",
+       "unit" : "шт",
+       "price" : 700
+     } ]
+   }, {
+     "name" : "Двери",
+     "fields" : [ {
+       "name" : "Установка входной двери",
+       "unit" : "шт",
+       "price" : 1900
+     }, {
+       "name" : "Установка межкомнатной двери",
+       "unit" : "шт",
+       "price" : 2400
+     }, {
+       "name" : "Установка дверной ручки",
+       "unit" : "шт",
+       "price" : 500
+     }, {
+       "name" : "Демонтаж двери",
+       "unit" : "шт",
+       "price" : 500
+     } ]
+   }, {
+     "name" : "Переезд",
+     "fields" : [ {
+       "name" : "Фургон 3 м",
+       "unit" : "час",
+       "price" : 1300
+     }, {
+       "name" : "Фургон 4 м",
+       "unit" : "час",
+       "price" : 1600
+     }, {
+       "name" : "Услуги грузчиков\t1",
+       "unit" : "грузчик/час",
+       "price" : 300
+     } ]
+   }, {
+     "name" : "Упаковка",
+     "fields" : [ {
+       "name" : "Стерей-пленка",
+       "unit" : "шт",
+       "price" : 100
+     }, {
+       "name" : "Стрейч-пленка и воздушно-пузырчатая пленка",
+       "unit" : "шт",
+       "price" : 200
+     } ]
+   } ]};
+
+ var config;
+
+ function init() {
+   config = JSON.parse(JSON.stringify(originalConfig));
+   config.form = {};
+ }
+
+ init();
+
+</script>
+
+<style>
+ body {
+   background: #fafafa;
+ }
+
+ #app {
+   font-family: sans-serif;
+   width: 960px;
+   margin: 0 auto;
+   display: grid;
+   grid-template-columns: repeat(2, minmax(0, 1fr));
+   gap: 1rem;
+ }
+
+ #header {
+   grid-column: 2 span;
+ }
+
+ #header h1 {
+   margin: 0.5rem 0;
+ }
+
+ #picker {
+ }
+
+ .picker {
+ }
+
+ .picker__group_title {
+   cursor: pointer;
+   font-weight: bolder;
+   font-size: 0.9rem;
+   grid-column: 2 span;
+   padding-top: 0.5rem;
+   padding-bottom: 0.5rem;
+   padding-left: 0.5rem;
+   margin-left: -0.5rem;
+ }
+
+ .picker__group_title:hover {
+   background: hsl(0, 0%, 90%);
+ }
+
+
+ .picker__header {
+   margin-bottom: 1rem;
+ }
+
+ .pciker__header-services {
+   padding: 0.25rem;
+   margin-left: -0.25rem;
+ }
+
+ .picker__header-picked-services {
+   background: hsl(0, 0%, 90%);
+   cursor: pointer;
+ }
+
+ .picker__task {
+   /* display: flex;
+      justify-content: space-between; */
+   display: grid;
+   grid-template-columns: 2fr 1fr;
+
+   margin-bottom: 0.25rem;
+   padding-left: 0.25rem;
+ }
+
+ .picker__task_input {
+   width: 3rem;
+ }
+
+ .picker__task_unit {
+   padding-left: 0.25rem;
+ }
+
+ .picker__minus, .picker__plus {
+   color: #777;
+ }
+
+ .picker__minus {
+   cursor: pointer;
+   padding-right: 0.25rem;
+ }
+
+ .picker__plus:hover, .picker__minus:hover {
+   font-weight: bold;
+ }
+ .picker__plus {
+   cursor: pointer;
+   padding-left: 0.25rem;
+ }
+
+
+
+ #bill {
+ }
+
+ .bill__title {
+   font-weight: bold;
+   margin-bottom: 0.5rem;
+ }
+
+ .bill__task {
+   display: grid;
+   grid-template-columns: 3fr 1fr;
+
+   margin-bottom: 0.25rem;
+   padding-left: 0.25rem;
+ }
+
+ .bill__price {
+
+   justify-self: end;
+ }
+
+ .bill__summary_title {
+   font-weight: bold;
+
+   font-size: 1.5rem;
+   justify-self: end;
+
+ }
+
+ .bill__summary_price {
+   font-size: 1.5rem;
+   justify-self: end;
+ }
+
+
+ .bill__position-remove {
+   padding-right: 0.25rem;
+   cursor: pointer;
+
+ }
+
+ .form {}
+
+ .form__input {
+   display: flex;
+   border-bottom: 1px solid #ccc;
+   padding: 0.5rem;
+ }
+
+ .form__input-last {
+   border-bottom: none;
+ }
+
+
+ .form__input label {
+   color: #aaa;
+   padding-right: 0.25rem;
+ }
+
+ .form__input input, .form__input textarea {
+   outline: none;
+   border: none;
+   background-color: hsl(0, 0%, 0%, 0);
+   width: 100%;
+ }
+
+ .form__button {
+   border: none;
+   padding: 0.5rem 1rem;
+   cursor: pointer;
+   background-color: hsl(0, 0%, 90%);
+   outline: none;
+ }
+
+ .form__button:hover {
+   background-color: hsl(0, 0%, 85%);
+ }
+
+ .form__button:active{
+   background-color: hsl(0, 0%, 90%);
+ }
+
+ .form__message {
+   padding-left: 0.25rem;
+ }
+
+ .form__new-order {
+   margin-left: 0.25rem;
+   border-bottom: 1px dashed #ccc;
+   color: hsl(0, 0%, 30%);
+   cursor: pointer;
+ }
+
+ .form__new-order:hover {
+   color: hsl(0, 0%, 50%);
+ }
+
+ .form__new-order:active {
+   color: hsl(0, 0%, 30%);
+ }
+
+
+
+
+</style>
