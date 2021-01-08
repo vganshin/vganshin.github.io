@@ -1,0 +1,146 @@
+<img style="float: right;" src="https://ds04.infourok.ru/uploads/ex/0e71/000e04a8-a53351f1/hello_html_1bbfbb2b.jpg">
+
+<pre>
+  A B C D E F N M
+  <input id="letters_input">
+  <input type="button" value="Apply" onclick="apply()">
+  <input type="button" value="Random" onclick="gen_random()">
+</pre>
+
+<pre id="root">
+
+</pre>
+
+<script>
+  const zero = "0";
+  const one = "1";
+  const s2 = "√2";
+  const s3 = "√3";
+
+  const data = {A: {A: zero,
+                    B: one,
+                    C: s2,
+                    D: one,
+                    E: s2,
+                    F: s3,
+                    N: s2,
+                    M: one},
+
+                B: {A: one,
+                    B: zero,
+                    C: one,
+                    D: s2,
+                    E: one,
+                    F: s2,
+                    N: s3,
+                    M: s2},
+
+                C: {A: s2,
+                    B: one,
+                    C: zero,
+                    D: one,
+                    E: s2,
+                    F: one,
+                    N: s2,
+                    M: s3},
+
+                D: {A: one,
+                    B: s2,
+                    C: one,
+                    D: zero,
+                    E: s3,
+                    F: s2,
+                    N: one,
+                    M: s2},
+
+                E: {A: s2,
+                    B: one,
+                    C: s2,
+                    D: s3,
+                    E: zero,
+                    F: one,
+                    N: s2,
+                    M: one},
+
+                F: {A: s3,
+                    B: s2,
+                    C: one,
+                    D: s2,
+                    E: one,
+                    F: zero,
+                    N: one,
+                    M: s2},
+
+                N: {A: s2,
+                    B: s3,
+                    C: s2,
+                    D: one,
+                    E: s2,
+                    F: one,
+                    N: zero,
+                    M: one},
+
+                M: {A: one,
+                    B: s2,
+                    C: s3,
+                    D: s2,
+                    E: one,
+                    F: s2,
+                    N: one,
+                    M: zero}} ;
+
+  const letters = ["A", "B", "C", "D", "E", "F", "N", "M"];
+
+  function calc() {
+      return letters.map(a => {
+          return letters.map(b => {
+              return `${a}${b} = ${data[a][b]}`;
+          }).join("\n");
+      }).join("\n\n");
+  }
+
+  document.getElementById("root").innerText = calc();
+
+  /**
+   * Shuffles array in place.
+   * @param {Array} a items An array containing the items.
+   */
+  function shuffle(a) {
+      var j, x, i;
+      for (i = a.length - 1; i > 0; i--) {
+          j = Math.floor(Math.random() * (i + 1));
+          x = a[i];
+          a[i] = a[j];
+          a[j] = x;
+      }
+      return a;
+  }
+
+  function gen_random() {
+      let letters = ["A", "B", "C", "D", "E", "F", "N", "M"];
+      shuffle(letters);
+      document.getElementById("letters_input").value = letters.join("");
+  }
+
+  function apply() {
+      const letters = document.getElementById("letters_input").value.split("");
+
+      console.log(letters)
+
+      const r = letters.map(a => {
+          return letters.map(b => {
+
+              const r = data[a] ? data[a][b] : "???";
+
+              return `${a}${b} = ${r}`;
+          }).join("\n");
+      }).join("\n\n");
+
+      document.getElementById("root").innerText = r;
+      
+
+  }
+
+
+
+</script>
