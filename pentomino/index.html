@@ -6,33 +6,38 @@
 <div id="root">
     <div>
 
-<canvas id="tutorial" width="300" height="300"></canvas>
+        <canvas id="tutorial" width="300" height="300"></canvas>
 
-<!-- <input type="range" id="step" name="volume" min="0" max="10000" value="10"/> -->
-<br>
-<input type="number" id="iters" value="100"/>
-<input type="button" id="run" value="ПУСК"/>
-<input type="button" value="СБРОС" onclick="init()"/>
-<input type="button" value="+1" onclick="repeatIterations(1)"/>
+        <!-- <input type="range" id="step" name="volume" min="0" max="10000" value="10"/> -->
+        <br>
+        <input type="number" id="iters" value="100" />
+        <input type="button" id="run" value="ПУСК" />
+        <input type="button" value="СБРОС" onclick="init()" />
+        <input type="button" value="+1" onclick="repeatIterations(1)" />
 
-<div id="current-step" class="msg"></div>
-<div id="found" class="msg"></div>
-<div id="desc"></div>
+        <div id="desc"></div>
+        <div id="current-step" class="msg"></div>
+        <div id="found" class="msg"></div>
 
-<input type="button"  value="5×5" onclick="init55()"/>
-<input type="button"  value="8×8 центр" onclick="init88center()"/>
-<input type="button"  value="8×8 края" onclick="init88edges()"/>
-<input type="button"  value="6×10" onclick="init610()"/>
-<ul id="solutions"></ul>
-
+        <input type="button" value="5×5" onclick="init55()" />
+        <input type="button" value="8×8 центр" onclick="init88center()" />
+        <input type="button" value="8×8 края" onclick="init88edges()" />
+        <input type="button" value="6×10" onclick="init610()" />
     </div>
     <div>
-<div>стэк</div>
-<pre id="stack"></pre>
-</div>
+        <div>стэк</div>
+        <pre id="stack"></pre>
+    </div>
+    <div class="solutions">
+        <ul id="solutions"></ul>
+    </div>
 
 </div>
 <style>
+    .solutions {
+        height: 100vh;
+        overflow: scroll;
+    }
     #solutions {
         margin-top: 1rem;
     }
